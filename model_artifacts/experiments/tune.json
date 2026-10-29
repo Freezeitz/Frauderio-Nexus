@@ -1,0 +1,8 @@
+{
+  "best_parameters": {
+    "num_leaves": 11,
+    "learning_rate": 0.19389847721104708
+  },
+  "validation_average_precision": 0.34686680311715146,
+  "note": "Untouched final 2000 rows are not used for parameter selection."
+}

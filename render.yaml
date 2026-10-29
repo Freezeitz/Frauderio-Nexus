@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: frauderio-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py init && python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_ORIGIN
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ALLOW_REGISTRATION
+        value: "false"

@@ -1,0 +1,37 @@
+{
+  "counterfactuals": [
+    [
+      {
+        "amount_ratio": 0.200542814,
+        "untrusted_device": 1.0,
+        "unfamiliar_city": 0.0,
+        "velocity_1h": 5.0,
+        "shared_accounts": 2.0,
+        "receiver_count": 0.0,
+        "account_age_days": 321.0,
+        "hour_deviation": 2.5662352265879584,
+        "password_resets": 1.0,
+        "otp_failures": 0.0,
+        "new_beneficiary": 0.0,
+        "merchant_risk": 0.5361604318093669,
+        "fraud": 0
+      },
+      {
+        "amount_ratio": 1.185298011,
+        "untrusted_device": 1.0,
+        "unfamiliar_city": 0.0,
+        "velocity_1h": 5.0,
+        "shared_accounts": 2.0,
+        "receiver_count": 0.0,
+        "account_age_days": 321.0,
+        "hour_deviation": 2.5662352265879584,
+        "password_resets": 1.0,
+        "otp_failures": 0.0,
+        "new_beneficiary": 0.0,
+        "merchant_risk": 0.5361604318093669,
+        "fraud": 0
+      }
+    ]
+  ],
+  "note": "DiCE research baseline; only amount ratio can change. Account age, device trust and history remain immutable."
+}

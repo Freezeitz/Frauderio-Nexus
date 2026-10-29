@@ -1,0 +1,7 @@
+-r requirements.txt
+pyod>=2,<4
+optuna>=4,<5
+river>=0.22,<1
+dice-ml>=0.11,<1
+gensim>=4.3,<5
+imbalanced-learn>=0.13,<1

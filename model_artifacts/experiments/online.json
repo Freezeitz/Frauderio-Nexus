@@ -1,0 +1,4 @@
+{
+  "average_precision_after_warmup": 0.11978117108512175,
+  "note": "Prequential evaluation: score before updating; feedback is not automatically trusted."
+}

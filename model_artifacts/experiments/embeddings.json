@@ -1,0 +1,7 @@
+{
+  "nodes": 176,
+  "dimensions": 32,
+  "p": 0.5,
+  "q": 2.0,
+  "note": "Snapshot embeddings for research; they are not used for historical predictions because a full graph snapshot can leak future relationships."
+}
