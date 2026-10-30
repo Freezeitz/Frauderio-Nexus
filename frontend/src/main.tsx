@@ -21,9 +21,7 @@ import {
 import cytoscape from "cytoscape";
 import "./style.css";
 
-// -----------------------------------------------------------------------------
-// API and shared utilities
-// -----------------------------------------------------------------------------
+// API helpers
 
 let csrf = "";
 
@@ -86,9 +84,7 @@ function useData(path: string) {
   });
 }
 
-// -----------------------------------------------------------------------------
 // Shared components
-// -----------------------------------------------------------------------------
 
 function Status({ value }: { value: string }) {
   return (
@@ -99,13 +95,11 @@ function Status({ value }: { value: string }) {
 }
 
 function Message({ error }: { error: any }) {
-  if (!error) return null;
-
-  return (
+  return error ? (
     <p className="error" role="alert">
       {error.message || String(error)}
     </p>
-  );
+  ) : null;
 }
 
 function Empty({
@@ -312,15 +306,9 @@ function Chart({
   );
 }
 
-// -----------------------------------------------------------------------------
-// Authentication
-// -----------------------------------------------------------------------------
+// Sign in and registration
 
-function Auth({
-  done,
-}: {
-  done: (result: any) => void;
-}) {
+function Auth({ done }: { done: (result: any) => void }) {
   const [register, setRegister] = useState(false);
 
   return (
@@ -333,9 +321,7 @@ function Auth({
       <div className="auth-form">
         <p className="eyebrow">OPERATIONS ACCESS</p>
 
-        <h1>
-          {register ? "Create your account" : "Sign in"}
-        </h1>
+        <h1>{register ? "Create your account" : "Sign in"}</h1>
 
         <p className="muted">
           {register
@@ -354,15 +340,9 @@ function Auth({
           }
           after={done}
         >
-          {register && (
-            <Field name="name" label="Full name" />
-          )}
+          {register && <Field name="name" label="Full name" />}
 
-          <Field
-            name="email"
-            label="Work email"
-            type="email"
-          />
+          <Field name="email" label="Work email" type="email" />
 
           <label>
             Password
@@ -406,21 +386,13 @@ function Auth({
   );
 }
 
-// -----------------------------------------------------------------------------
-// Transaction table
-// -----------------------------------------------------------------------------
+// Transaction table columns
 
-const txColumns: [
-  string,
-  (row: any) => React.ReactNode,
-][] = [
+const txColumns: [string, (row: any) => React.ReactNode][] = [
   [
     "Reference",
     (row) => (
-      <Link
-        className="mono"
-        to={"/transactions/" + row.id}
-      >
+      <Link className="mono" to={"/transactions/" + row.id}>
         {row.reference}
       </Link>
     ),
@@ -437,9 +409,7 @@ const txColumns: [
   [
     "Amount",
     (row) => (
-      <strong className="numeric">
-        {money(row.amount)}
-      </strong>
+      <strong className="numeric">{money(row.amount)}</strong>
     ),
   ],
   [
@@ -457,98 +427,7 @@ const txColumns: [
   ["Status", (row) => row.status],
 ];
 
-// -----------------------------------------------------------------------------
-// Catalogue and network communities
-// -----------------------------------------------------------------------------
-
-function RingCandidates() {
-  const data = useData("/fraud-rings");
-
-  return (
-    <section>
-      <h2>Shared-device communities</h2>
-
-      <p className="muted">
-        Candidate associations for investigation. Shared
-        infrastructure alone does not establish fraud.
-      </p>
-
-      <Message error={data.error} />
-
-      <Table
-        rows={data.data || []}
-        columns={[
-          [
-            "Community",
-            (row) => (
-              <Link to={"/network/" + row.id}>
-                Inspect {row.id}
-              </Link>
-            ),
-          ],
-          ["Accounts", (row) => row.accounts],
-          ["Shared devices", (row) => row.shared_devices],
-          ["Density", (row) => row.density.toFixed(2)],
-          [
-            "Highest recorded score",
-            (row) => row.max_risk_score,
-          ],
-        ]}
-      />
-    </section>
-  );
-}
-
-function Catalogue() {
-  return (
-    <div className="two-col">
-      <section>
-        <h2>Register device</h2>
-
-        <Form
-          onSubmit={(values) =>
-            api("/devices", "POST", values)
-          }
-        >
-          <Field
-            name="reference"
-            label="Unique device reference"
-          />
-
-          <Select
-            name="kind"
-            label="Device type"
-            options={["mobile", "desktop", "terminal"]}
-          />
-        </Form>
-      </section>
-
-      <section>
-        <h2>Register merchant</h2>
-
-        <Form
-          onSubmit={(values) =>
-            api("/merchants", "POST", values)
-          }
-        >
-          <Field name="name" label="Merchant name" />
-          <Field name="category" label="Category" />
-
-          <Field
-            name="risk"
-            label="Reference risk (0–1)"
-            type="number"
-            value="0.1"
-          />
-        </Form>
-      </section>
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
 // Overview
-// -----------------------------------------------------------------------------
 
 function Overview() {
   const overview = useData("/overview");
@@ -621,16 +500,14 @@ function Overview() {
       />
 
       <p className="footnote">
-        Values reflect saved transactions. Suggested actions
-        do not move or block funds.
+        Values reflect saved transactions. Suggested actions do not
+        move or block funds.
       </p>
     </>
   );
 }
 
-// -----------------------------------------------------------------------------
 // Transaction ledger
-// -----------------------------------------------------------------------------
 
 function Transactions() {
   const [search, setSearch] = useState("");
@@ -672,20 +549,15 @@ function Transactions() {
         >
           <option value="">All risk levels</option>
 
-          {["low", "medium", "high", "critical"].map(
-            (value) => (
-              <option key={value}>{value}</option>
-            ),
-          )}
+          {["low", "medium", "high", "critical"].map((value) => (
+            <option key={value}>{value}</option>
+          ))}
         </select>
       </div>
 
       <Message error={data.error} />
 
-      <Table
-        columns={txColumns}
-        rows={data.data || []}
-      />
+      <Table columns={txColumns} rows={data.data || []} />
 
       <div className="pager">
         <button
@@ -700,9 +572,7 @@ function Transactions() {
 
         <button
           className="secondary"
-          disabled={
-            !data.data || data.data.length < 100
-          }
+          disabled={!data.data || data.data.length < 100}
           onClick={() => setPage(page + 1)}
         >
           Next
@@ -712,9 +582,7 @@ function Transactions() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Record transaction: new or saved accounts, merchants and devices
-// -----------------------------------------------------------------------------
+// Record a transaction
 
 function Submit() {
   const accounts = useData("/accounts");
@@ -724,10 +592,7 @@ function Submit() {
   const [accountMode, setAccountMode] = useState("existing");
   const [merchantMode, setMerchantMode] = useState("existing");
   const [deviceMode, setDeviceMode] = useState("existing");
-
-  const [reference] = useState(
-    () => "TX-" + Date.now(),
-  );
+  const [reference] = useState(() => "TX-" + Date.now());
 
   const newAccount =
     accountMode === "new" || accounts.data?.length === 0;
@@ -756,9 +621,8 @@ function Submit() {
       </header>
 
       <p className="muted">
-        Choose saved details or add new ones. New accounts
-        and merchants are saved with this transaction and
-        available next time.
+        Choose saved details or add new ones. New accounts and merchants
+        are saved with this transaction and available next time.
       </p>
 
       <Form
@@ -807,9 +671,7 @@ function Submit() {
           })
         }
         after={(result) =>
-          navigate(
-            "/transactions/" + result.transaction.id,
-          )
+          navigate("/transactions/" + result.transaction.id)
         }
       >
         <h2>Account</h2>
@@ -818,9 +680,7 @@ function Submit() {
           Account selection
           <select
             value={newAccount ? "new" : "existing"}
-            onChange={(event) =>
-              setAccountMode(event.target.value)
-            }
+            onChange={(event) => setAccountMode(event.target.value)}
           >
             <option
               value="existing"
@@ -828,29 +688,15 @@ function Submit() {
             >
               Use saved account
             </option>
-
-            <option value="new">
-              Add new account
-            </option>
+            <option value="new">Add new account</option>
           </select>
         </label>
 
         {newAccount ? (
           <div className="form-grid">
-            <Field
-              name="account_number"
-              label="Account number"
-            />
-
-            <Field
-              name="holder"
-              label="Account holder"
-            />
-
-            <Field
-              name="home_city"
-              label="Home city"
-            />
+            <Field name="account_number" label="Account number" />
+            <Field name="holder" label="Account holder" />
+            <Field name="home_city" label="Home city" />
 
             <Field
               name="usual_amount"
@@ -865,8 +711,7 @@ function Submit() {
             label="Saved account"
             options={accounts.data.map((account: any) => ({
               value: account.id,
-              label:
-                account.reference + " · " + account.name,
+              label: account.reference + " · " + account.name,
             }))}
           />
         )}
@@ -877,9 +722,7 @@ function Submit() {
           Merchant selection
           <select
             value={newMerchant ? "new" : "existing"}
-            onChange={(event) =>
-              setMerchantMode(event.target.value)
-            }
+            onChange={(event) => setMerchantMode(event.target.value)}
           >
             <option
               value="existing"
@@ -887,19 +730,13 @@ function Submit() {
             >
               Use saved merchant
             </option>
-
-            <option value="new">
-              Add new merchant
-            </option>
+            <option value="new">Add new merchant</option>
           </select>
         </label>
 
         {newMerchant ? (
           <div className="form-grid">
-            <Field
-              name="merchant_name"
-              label="Merchant name"
-            />
+            <Field name="merchant_name" label="Merchant name" />
 
             <Field
               name="merchant_category"
@@ -911,12 +748,10 @@ function Submit() {
           <Select
             name="merchant_id"
             label="Saved merchant"
-            options={catalogue.data.merchants.map(
-              (merchant: any) => ({
-                value: merchant.id,
-                label: merchant.name,
-              }),
-            )}
+            options={catalogue.data.merchants.map((merchant: any) => ({
+              value: merchant.id,
+              label: merchant.name,
+            }))}
           />
         )}
 
@@ -929,16 +764,8 @@ function Submit() {
             value={reference}
           />
 
-          <Field
-            name="amount"
-            label="Amount (INR)"
-            type="number"
-          />
-
-          <Field
-            name="city"
-            label="Transaction city"
-          />
+          <Field name="amount" label="Amount (INR)" type="number" />
+          <Field name="city" label="Transaction city" />
 
           <label>
             Receiving account (optional)
@@ -946,10 +773,7 @@ function Submit() {
               <option value="">None</option>
 
               {accounts.data.map((account: any) => (
-                <option
-                  key={account.id}
-                  value={account.id}
-                >
+                <option key={account.id} value={account.id}>
                   {account.reference} · {account.name}
                 </option>
               ))}
@@ -963,9 +787,7 @@ function Submit() {
           Device selection
           <select
             value={newDevice ? "new" : "existing"}
-            onChange={(event) =>
-              setDeviceMode(event.target.value)
-            }
+            onChange={(event) => setDeviceMode(event.target.value)}
           >
             <option
               value="existing"
@@ -973,10 +795,7 @@ function Submit() {
             >
               Use saved device
             </option>
-
-            <option value="new">
-              Add new device
-            </option>
+            <option value="new">Add new device</option>
           </select>
         </label>
 
@@ -989,12 +808,10 @@ function Submit() {
           <Select
             name="device_id"
             label="Saved device"
-            options={catalogue.data.devices.map(
-              (device: any) => ({
-                value: device.id,
-                label: device.reference,
-              }),
-            )}
+            options={catalogue.data.devices.map((device: any) => ({
+              value: device.id,
+              label: device.reference,
+            }))}
           />
         )}
       </Form>
@@ -1002,9 +819,7 @@ function Submit() {
   );
 }
 
-// -----------------------------------------------------------------------------
 // Transaction detail
-// -----------------------------------------------------------------------------
 
 function TransactionDetail() {
   const { id } = useParams();
@@ -1012,9 +827,7 @@ function TransactionDetail() {
   const navigate = useNavigate();
   const [scenario, setScenario] = useState<any>();
 
-  if (!data.data) {
-    return <Message error={data.error} />;
-  }
+  if (!data.data) return <Message error={data.error} />;
 
   const {
     transaction,
@@ -1027,9 +840,7 @@ function TransactionDetail() {
       <header>
         <div>
           <p className="eyebrow">TRANSACTION RECORD</p>
-          <h1 className="mono">
-            {transaction.reference}
-          </h1>
+          <h1 className="mono">{transaction.reference}</h1>
         </div>
 
         <strong className="large-amount">
@@ -1041,7 +852,6 @@ function TransactionDetail() {
         <Link to={"/accounts/" + transaction.account_id}>
           View account
         </Link>
-
         <span>{date(transaction.occurred_at)}</span>
         <span>{transaction.city}</span>
         <span>{transaction.channel}</span>
@@ -1060,24 +870,15 @@ function TransactionDetail() {
 
               <Status value={prediction.tier} />
 
-              <p>
-                Recommended action: {prediction.action}
-              </p>
+              <p>Recommended action: {prediction.action}</p>
             </div>
 
             <div className="component-list">
               {Object.entries(prediction.components).map(
                 ([name, value]) => (
                   <div key={name}>
-                    <span>
-                      {name.replaceAll("_", " ")}
-                    </span>
-
-                    <progress
-                      value={Number(value)}
-                      max={1}
-                    />
-
+                    <span>{name.replaceAll("_", " ")}</span>
+                    <progress value={Number(value)} max={1} />
                     <span className="mono">
                       {(Number(value) * 100).toFixed(1)}%
                     </span>
@@ -1088,9 +889,8 @@ function TransactionDetail() {
           </div>
 
           <p className="footnote">
-            Behaviour is an anomaly percentile, not a fraud
-            probability. Other model scores are combined and
-            calibrated by the ensemble.
+            Behaviour is an anomaly percentile, not a fraud probability.
+            Other model scores are combined and calibrated by the ensemble.
           </p>
 
           <h2>Decision factors</h2>
@@ -1101,15 +901,14 @@ function TransactionDetail() {
               ["Factor", (row) => row.message],
               [
                 "Contribution",
-                (row) =>
-                  Number(row.contribution).toFixed(3),
+                (row) => Number(row.contribution).toFixed(3),
               ],
             ]}
           />
 
           <p className="footnote">
-            TreeSHAP contributions explain the transaction
-            model in log-odds, not the final combined score.
+            TreeSHAP contributions explain the transaction model in
+            log-odds, not the final combined score.
           </p>
 
           <div className="two-col">
@@ -1125,9 +924,7 @@ function TransactionDetail() {
                     account_id: transaction.account_id,
                   })
                 }
-                after={(result) =>
-                  navigate("/cases/" + result.id)
-                }
+                after={(result) => navigate("/cases/" + result.id)}
               >
                 <Field
                   name="title"
@@ -1150,17 +947,10 @@ function TransactionDetail() {
                 <Select
                   name="outcome"
                   label="Outcome"
-                  options={[
-                    "uncertain",
-                    "legitimate",
-                    "fraud",
-                  ]}
+                  options={["uncertain", "legitimate", "fraud"]}
                 />
 
-                <Field
-                  name="reason"
-                  label="Reason"
-                />
+                <Field name="reason" label="Reason" />
               </Form>
             </section>
 
@@ -1175,8 +965,7 @@ function TransactionDetail() {
                     "POST",
                     {
                       amount: values.amount,
-                      trusted_device:
-                        values.trusted_device === "yes",
+                      trusted_device: values.trusted_device === "yes",
                     },
                   )
                 }
@@ -1198,10 +987,8 @@ function TransactionDetail() {
 
               {scenario && (
                 <p className="scenario">
-                  Original {scenario.original_score}
-                  {" → "}
-                  scenario {scenario.scenario.score}.
-                  No saved records changed.
+                  Original {scenario.original_score} → scenario{" "}
+                  {scenario.scenario.score}. No saved records changed.
                 </p>
               )}
             </section>
@@ -1223,9 +1010,7 @@ function TransactionDetail() {
   );
 }
 
-// -----------------------------------------------------------------------------
 // Customer accounts
-// -----------------------------------------------------------------------------
 
 function Accounts() {
   const data = useData("/accounts");
@@ -1245,28 +1030,13 @@ function Accounts() {
       {show && (
         <section className="editor">
           <Form
-            onSubmit={(values) =>
-              api("/accounts", "POST", values)
-            }
-            after={(result) =>
-              navigate("/accounts/" + result.id)
-            }
+            onSubmit={(values) => api("/accounts", "POST", values)}
+            after={(result) => navigate("/accounts/" + result.id)}
           >
             <div className="form-grid">
-              <Field
-                name="name"
-                label="Account holder"
-              />
-
-              <Field
-                name="reference"
-                label="Account number"
-              />
-
-              <Field
-                name="city"
-                label="Home city"
-              />
+              <Field name="name" label="Account holder" />
+              <Field name="reference" label="Account number" />
+              <Field name="city" label="Home city" />
 
               <Field
                 name="usual_amount"
@@ -1280,8 +1050,7 @@ function Accounts() {
       )}
 
       <p className="muted">
-        Customer financial records are separate from staff
-        sign-in accounts.
+        Customer financial records are separate from staff sign-in accounts.
       </p>
 
       <Message error={data.error} />
@@ -1300,10 +1069,7 @@ function Accounts() {
           ["Holder", (row) => row.name],
           ["City", (row) => row.city],
           ["Opened", (row) => date(row.opened_at)],
-          [
-            "Status",
-            (row) => <Status value={row.status} />,
-          ],
+          ["Status", (row) => <Status value={row.status} />],
         ]}
       />
     </>
@@ -1314,9 +1080,7 @@ function AccountDetail() {
   const { id } = useParams();
   const data = useData("/accounts/" + id);
 
-  if (!data.data) {
-    return <Message error={data.error} />;
-  }
+  if (!data.data) return <Message error={data.error} />;
 
   const {
     account,
@@ -1359,9 +1123,7 @@ function AccountDetail() {
               .map((transaction: any) => transaction.occurred_at),
             y: [...transactions]
               .reverse()
-              .map((transaction: any) =>
-                Number(transaction.amount),
-              ),
+              .map((transaction: any) => Number(transaction.amount)),
             line: { color: "#164e63", width: 1.5 },
             marker: { size: 4 },
           },
@@ -1370,14 +1132,9 @@ function AccountDetail() {
 
       <h2>Transaction history</h2>
 
-      <Table
-        columns={txColumns}
-        rows={transactions}
-      />
+      <Table columns={txColumns} rows={transactions} />
 
-      <Link to="/transactions">
-        Search the full ledger
-      </Link>
+      <Link to="/transactions">Search the full ledger</Link>
 
       <div className="two-col">
         <section>
@@ -1386,10 +1143,7 @@ function AccountDetail() {
           <Table
             rows={events}
             columns={[
-              [
-                "Event",
-                (row) => row.kind.replaceAll("_", " "),
-              ],
+              ["Event", (row) => row.kind.replaceAll("_", " ")],
               ["Time", (row) => date(row.occurred_at)],
             ]}
           />
@@ -1427,8 +1181,7 @@ function AccountDetail() {
               ["Device", (row) => "DEV-" + row.device_id],
               [
                 "Trust",
-                (row) =>
-                  row.trusted ? "Trusted" : "Unverified",
+                (row) => (row.trusted ? "Trusted" : "Unverified"),
               ],
             ]}
           />
@@ -1438,14 +1191,142 @@ function AccountDetail() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Network investigation
-// -----------------------------------------------------------------------------
+// Devices and merchants
+
+function Catalogue() {
+  return (
+    <div className="two-col">
+      <section>
+        <h2>Register device</h2>
+
+        <Form
+          onSubmit={(values) => api("/devices", "POST", values)}
+        >
+          <Field
+            name="reference"
+            label="Unique device reference"
+          />
+
+          <Select
+            name="kind"
+            label="Device type"
+            options={["mobile", "desktop", "terminal"]}
+          />
+        </Form>
+      </section>
+
+      <section>
+        <h2>Register merchant</h2>
+
+        <Form
+          onSubmit={(values) => api("/merchants", "POST", values)}
+        >
+          <Field name="name" label="Merchant name" />
+          <Field name="category" label="Category" />
+
+          <Field
+            name="risk"
+            label="Reference risk (0–1)"
+            type="number"
+            value="0.1"
+          />
+        </Form>
+      </section>
+    </div>
+  );
+}
+
+// Network account selector
+// Only mounts the graph after finding an existing account.
 
 function Network() {
-  const { id = "1" } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const data = useData("/network/" + id);
+  const accounts = useData("/accounts");
+
+  const records = accounts.data || [];
+
+  const selectedAccount =
+    records.find(
+      (account: any) => String(account.id) === id,
+    ) || records[0];
+
+  useEffect(() => {
+    if (
+      selectedAccount &&
+      String(selectedAccount.id) !== id
+    ) {
+      navigate(
+        "/network/" + selectedAccount.id,
+        { replace: true },
+      );
+    }
+  }, [selectedAccount?.id, id, navigate]);
+
+  return (
+    <>
+      <header>
+        <h1>Network investigation</h1>
+      </header>
+
+      <Message error={accounts.error} />
+
+      {accounts.isPending ? (
+        <p className="muted">Loading your accounts…</p>
+      ) : accounts.error ? null : !selectedAccount ? (
+        <>
+          <p className="muted">
+            Create an account and record a transaction to explore
+            its connections.
+          </p>
+
+          <Link className="button" to="/submit">
+            Record transaction
+          </Link>
+        </>
+      ) : (
+        <>
+          <label>
+            Account number
+            <select
+              value={String(selectedAccount.id)}
+              onChange={(event) =>
+                navigate("/network/" + event.target.value)
+              }
+            >
+              {records.map((account: any) => (
+                <option
+                  key={account.id}
+                  value={String(account.id)}
+                >
+                  {account.reference} · {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <p className="muted">
+            Choose a saved account to inspect its connections.
+          </p>
+
+          <NetworkGraph
+            key={selectedAccount.id}
+            accountId={String(selectedAccount.id)}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+// Network graph
+
+function NetworkGraph({
+  accountId,
+}: {
+  accountId: string;
+}) {
+  const data = useData("/network/" + accountId);
   const ref = useRef<HTMLDivElement>(null);
 
   const [selected, setSelected] = useState("");
@@ -1454,7 +1335,7 @@ function Network() {
   useEffect(() => {
     if (!data.data || !ref.current) return;
 
-    const centre = `A${id}`;
+    const centre = `A${accountId}`;
     const allNodes = data.data.nodes as any[];
     const allEdges = data.data.edges as any[];
 
@@ -1557,7 +1438,7 @@ function Network() {
           },
         },
         {
-          selector: `node[id="A${id}"]`,
+          selector: `node[id="A${accountId}"]`,
           style: {
             "background-color": "#164e63",
             width: 42,
@@ -1624,30 +1505,10 @@ function Network() {
     return () => {
       cy.destroy();
     };
-  }, [data.data, id]);
+  }, [data.data, accountId]);
 
   return (
     <>
-      <header>
-        <h1>Network investigation</h1>
-      </header>
-
-      <Form
-        label="Inspect account"
-        onSubmit={async (values) => {
-          navigate("/network/" + values.id);
-        }}
-      >
-        <div className="filters">
-          <Field
-            name="id"
-            label="Account ID"
-            type="number"
-            value={id}
-          />
-        </div>
-      </Form>
-
       <Message error={data.error} />
 
       <div ref={ref} className="network" />
@@ -1656,8 +1517,7 @@ function Network() {
         <p className="muted small">
           Showing {visibleCount} focused nodes from{" "}
           {data.data.nodes.length} in the two-hop network.
-          Hover over a node to reveal its label; drag or
-          scroll to explore.
+          Hover over a node to reveal its label; drag or scroll to explore.
         </p>
       )}
 
@@ -1682,9 +1542,42 @@ function Network() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Alerts
-// -----------------------------------------------------------------------------
+function RingCandidates() {
+  const data = useData("/fraud-rings");
+
+  return (
+    <section>
+      <h2>Shared-device communities</h2>
+
+      <p className="muted">
+        Candidate associations for investigation. Shared infrastructure
+        alone does not establish fraud.
+      </p>
+
+      <Message error={data.error} />
+
+      <Table
+        rows={data.data || []}
+        columns={[
+          [
+            "Community",
+            (row) => (
+              <Link to={"/network/" + row.id}>
+                Inspect {row.id}
+              </Link>
+            ),
+          ],
+          ["Accounts", (row) => row.accounts],
+          ["Shared devices", (row) => row.shared_devices],
+          ["Density", (row) => row.density.toFixed(2)],
+          ["Highest recorded score", (row) => row.max_risk_score],
+        ]}
+      />
+    </section>
+  );
+}
+
+// Alert queue
 
 function Alerts() {
   const data = useData("/alerts");
@@ -1747,9 +1640,7 @@ function Alerts() {
                   "resolved",
                   "dismissed",
                 ].map((status) => (
-                  <option key={status}>
-                    {status}
-                  </option>
+                  <option key={status}>{status}</option>
                 ))}
               </select>
             ),
@@ -1760,9 +1651,7 @@ function Alerts() {
   );
 }
 
-// -----------------------------------------------------------------------------
 // Investigations
-// -----------------------------------------------------------------------------
 
 function Cases() {
   const data = useData("/cases");
@@ -1778,17 +1667,10 @@ function Cases() {
 
       <Form
         label="Open case"
-        onSubmit={(values) =>
-          api("/cases", "POST", values)
-        }
-        after={(result) =>
-          navigate("/cases/" + result.id)
-        }
+        onSubmit={(values) => api("/cases", "POST", values)}
+        after={(result) => navigate("/cases/" + result.id)}
       >
-        <Field
-          name="title"
-          label="New case title"
-        />
+        <Field name="title" label="New case title" />
       </Form>
 
       <Table
@@ -1803,10 +1685,7 @@ function Cases() {
             ),
           ],
           ["Title", (row) => row.title],
-          [
-            "Status",
-            (row) => <Status value={row.status} />,
-          ],
+          ["Status", (row) => <Status value={row.status} />],
           ["Assigned to", (row) => row.assigned_to],
           ["Opened", (row) => date(row.created_at)],
         ]}
@@ -1819,9 +1698,7 @@ function CaseDetail({ user }: { user: any }) {
   const { id } = useParams();
   const data = useData("/cases/" + id);
 
-  if (!data.data) {
-    return <Message error={data.error} />;
-  }
+  if (!data.data) return <Message error={data.error} />;
 
   const caseRecord = data.data.case;
 
@@ -1922,16 +1799,12 @@ function CaseDetail({ user }: { user: any }) {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Models
-// -----------------------------------------------------------------------------
+// Model evaluation
 
 function Models() {
   const data = useData("/models");
 
-  if (!data.data) {
-    return <Message error={data.error} />;
-  }
+  if (!data.data) return <Message error={data.error} />;
 
   const metrics = data.data.metrics;
 
@@ -2021,10 +1894,7 @@ function Models() {
         ]}
         columns={[
           ["Model", (row) => row.name],
-          [
-            "Average precision",
-            (row) => row.ap.toFixed(4),
-          ],
+          ["Average precision", (row) => row.ap.toFixed(4)],
         ]}
       />
 
@@ -2033,9 +1903,7 @@ function Models() {
       <Table
         rows={metrics.confusion_matrix_at_0_5.map(
           (row: number[], index: number) => ({
-            label: index
-              ? "Actual fraud"
-              : "Actual legitimate",
+            label: index ? "Actual fraud" : "Actual legitimate",
             negative: row[0],
             positive: row[1],
           }),
@@ -2048,17 +1916,15 @@ function Models() {
       />
 
       <p className="footnote">
-        Training uses independent base-fit, ensemble-fit,
-        calibration and test partitions. Simulation results
-        do not establish operational performance.
+        Training uses independent base-fit, ensemble-fit, calibration
+        and test partitions. Simulation results do not establish
+        operational performance.
       </p>
     </>
   );
 }
 
-// -----------------------------------------------------------------------------
 // System monitoring
-// -----------------------------------------------------------------------------
 
 function System({ user }: { user: any }) {
   const data = useData("/monitoring");
@@ -2071,9 +1937,8 @@ function System({ user }: { user: any }) {
       </header>
 
       <p className="muted">
-        Distribution comparison against the synthetic training
-        reference. Drift does not itself establish reduced
-        detection accuracy.
+        Distribution comparison against the synthetic training reference.
+        Drift does not itself establish reduced detection accuracy.
       </p>
 
       <Message error={data.error || thresholds.error} />
@@ -2081,9 +1946,7 @@ function System({ user }: { user: any }) {
       {user.role !== "analyst" && (
         <Form
           label="Measure feature drift"
-          onSubmit={() =>
-            api("/monitoring/run", "POST", {})
-          }
+          onSubmit={() => api("/monitoring/run", "POST", {})}
         >
           <span />
         </Form>
@@ -2093,14 +1956,8 @@ function System({ user }: { user: any }) {
         rows={data.data || []}
         columns={[
           ["Feature", (row) => row.feature],
-          [
-            "KS statistic",
-            (row) => row.statistic.toFixed(3),
-          ],
-          [
-            "P value",
-            (row) => row.p_value.toExponential(2),
-          ],
+          ["KS statistic", (row) => row.statistic.toFixed(3)],
+          ["P value", (row) => row.p_value.toExponential(2)],
           ["Samples", (row) => row.sample_size],
           ["Measured", (row) => date(row.created_at)],
         ]}
@@ -2111,8 +1968,8 @@ function System({ user }: { user: any }) {
           <h2>Risk thresholds</h2>
 
           <p className="muted">
-            Changes apply to new assessments. Historical
-            decisions retain their original tier.
+            Changes apply to new assessments. Historical decisions
+            retain their original tier.
           </p>
 
           <Form
@@ -2138,9 +1995,7 @@ function System({ user }: { user: any }) {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Users and sessions
-// -----------------------------------------------------------------------------
+// User administration
 
 function Users() {
   const users = useData("/users");
@@ -2159,9 +2014,7 @@ function Users() {
         Passwords and session secrets are never displayed.
       </p>
 
-      <Message
-        error={error || users.error || sessions.error}
-      />
+      <Message error={error || users.error || sessions.error} />
 
       <Table
         rows={users.data || []}
@@ -2191,11 +2044,9 @@ function Users() {
                   }
                 }}
               >
-                {["analyst", "supervisor", "admin"].map(
-                  (role) => (
-                    <option key={role}>{role}</option>
-                  ),
-                )}
+                {["analyst", "supervisor", "admin"].map((role) => (
+                  <option key={role}>{role}</option>
+                ))}
               </select>
             ),
           ],
@@ -2227,10 +2078,7 @@ function Users() {
               </button>
             ),
           ],
-          [
-            "Last sign in",
-            (row) => date(row.last_login_at),
-          ],
+          ["Last sign in", (row) => date(row.last_login_at)],
         ]}
       />
 
@@ -2250,9 +2098,7 @@ function Users() {
   );
 }
 
-// -----------------------------------------------------------------------------
 // Audit history
-// -----------------------------------------------------------------------------
 
 function Audit() {
   const data = useData("/audit");
@@ -2277,9 +2123,7 @@ function Audit() {
           ["Record", (row) => row.entity],
           [
             "Details",
-            (row) => (
-              <code>{JSON.stringify(row.detail)}</code>
-            ),
+            (row) => <code>{JSON.stringify(row.detail)}</code>,
           ],
         ]}
       />
@@ -2287,9 +2131,7 @@ function Audit() {
   );
 }
 
-// -----------------------------------------------------------------------------
-// Application layout and routes
-// -----------------------------------------------------------------------------
+// Application layout and routing
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -2307,11 +2149,7 @@ function App() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="loading">
-        Opening workspace…
-      </div>
-    );
+    return <div className="loading">Opening workspace…</div>;
   }
 
   if (!session) {
@@ -2399,10 +2237,7 @@ function App() {
 
         <main>
           <Routes>
-            <Route
-              path="/"
-              element={<Overview />}
-            />
+            <Route path="/" element={<Overview />} />
 
             <Route
               path="/transactions"
@@ -2444,40 +2279,25 @@ function App() {
               }
             />
 
-            <Route
-              path="/alerts"
-              element={<Alerts />}
-            />
+            <Route path="/alerts" element={<Alerts />} />
 
-            <Route
-              path="/cases"
-              element={<Cases />}
-            />
+            <Route path="/cases" element={<Cases />} />
 
             <Route
               path="/cases/:id"
               element={<CaseDetail user={user} />}
             />
 
-            <Route
-              path="/models"
-              element={<Models />}
-            />
+            <Route path="/models" element={<Models />} />
 
             <Route
               path="/system"
               element={<System user={user} />}
             />
 
-            <Route
-              path="/users"
-              element={<Users />}
-            />
+            <Route path="/users" element={<Users />} />
 
-            <Route
-              path="/audit"
-              element={<Audit />}
-            />
+            <Route path="/audit" element={<Audit />} />
 
             <Route
               path="*"
@@ -2494,10 +2314,6 @@ function App() {
     </div>
   );
 }
-
-// -----------------------------------------------------------------------------
-// Entry point
-// -----------------------------------------------------------------------------
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={client}>

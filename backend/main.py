@@ -235,48 +235,107 @@ def health():
 
 @app.get("/api/overview")
 def overview(u=Depends(current), db=Depends(database)):
-    count = lambda cls: db.scalar(select(func.count()).select_from(cls))
+    active_statuses = ("new", "under_review", "escalated")
+
+    transaction_count = db.scalar(
+        select(func.count()).select_from(Transaction)
+    )
+
+    account_count = db.scalar(
+        select(func.count()).select_from(Account)
+    )
+
+    open_alert_count = db.scalar(
+        select(func.count())
+        .select_from(Alert)
+        .where(Alert.status.in_(active_statuses))
+    )
+
+    active_case_count = db.scalar(
+        select(func.count())
+        .select_from(Case)
+        .where(Case.status != "closed")
+    )
+
+    amount_under_review = db.scalar(
+        select(func.sum(Transaction.amount))
+        .join(Alert, Alert.transaction_id == Transaction.id)
+        .where(Alert.status.in_(active_statuses))
+    )
+
+    risk_distribution = [
+        {"tier": tier, "count": count}
+        for tier, count in db.execute(
+            select(Prediction.tier, func.count())
+            .group_by(Prediction.tier)
+        )
+    ]
+
     return {
-        "transactions": count(Transaction),
-        "accounts": count(Account),
-        "alerts": db.scalar(
-            select(func.count()).select_from(Alert).where(Alert.status != "resolved")
-        ),
-        "cases": db.scalar(
-            select(func.count()).select_from(Case).where(Case.status != "closed")
-        ),
-        "amount_under_review": float(
-            db.scalar(
-                select(func.sum(Transaction.amount))
-                .join(Prediction, Prediction.transaction_id == Transaction.id)
-                .where(Prediction.score > 600)
-            )
-            or 0
-        ),
-        "risk_distribution": [
-            {"tier": r[0], "count": r[1]}
-            for r in db.execute(
-                select(Prediction.tier, func.count()).group_by(Prediction.tier)
-            )
-        ],
+        "transactions": transaction_count,
+        "accounts": account_count,
+        "alerts": open_alert_count,
+        "cases": active_case_count,
+        "amount_under_review": float(amount_under_review or 0),
+        "risk_distribution": risk_distribution,
     }
 
 
 class AccountInput(BaseModel):
+    reference: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=40,
+        pattern=r"^[A-Za-z0-9-]+$",
+    )
     name: str = Field(min_length=2, max_length=100)
     city: str = Field(min_length=2, max_length=80)
-    usual_amount: Decimal = Field(gt=0, max_digits=16, decimal_places=2)
+    usual_amount: Decimal = Field(
+        gt=0,
+        max_digits=16,
+        decimal_places=2,
+    )
     usual_hour: int = Field(default=14, ge=0, le=23)
 
 
 @app.post("/api/accounts", status_code=201)
-def create_account(data: AccountInput, u=Depends(current), db=Depends(database)):
-    a = Account(**data.model_dump(), reference="AC-" + secrets.token_hex(5).upper())
-    db.add(a)
-    db.flush()
-    audit(db, u, "customer_account_created", a.id)
+def create_account(
+    data: AccountInput,
+    u=Depends(current),
+    db=Depends(database),
+):
+    values = data.model_dump()
+
+    values["reference"] = (
+        values["reference"]
+        or "AC-" + secrets.token_hex(5).upper()
+    )
+
+    existing = db.scalars(
+        select(Account).where(
+            Account.reference == values["reference"]
+        )
+    ).first()
+
+    if existing:
+        fail(
+            409,
+            "Account number already exists. Select the existing account.",
+        )
+
+    account = Account(**values)
+    db.add(account)
+
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        fail(409, "Account number already exists")
+
+    audit(db, u, "customer_account_created", account.id)
     db.commit()
-    return serialize(a)
+
+    return serialize(account)
 
 
 @app.get("/api/accounts")
@@ -338,10 +397,19 @@ def catalogue(u=Depends(current), db=Depends(database)):
     }
 
 
-def transaction_rows(db, account_id=None, q="", tier="", limit=100, offset=0):
+def transaction_rows(
+    db,
+    account_id=None,
+    q="",
+    tier="",
+    limit=100,
+    offset=0,
+):
     stmt = select(Transaction, Prediction).outerjoin(
-        Prediction, Prediction.transaction_id == Transaction.id
+        Prediction,
+        Prediction.transaction_id == Transaction.id,
     )
+
     if account_id:
         stmt = stmt.where(
             or_(
@@ -349,14 +417,34 @@ def transaction_rows(db, account_id=None, q="", tier="", limit=100, offset=0):
                 Transaction.receiver_id == account_id,
             )
         )
+
     if q:
-        stmt = stmt.where(Transaction.reference.ilike("%" + q + "%"))
+        stmt = stmt.where(
+            Transaction.reference.ilike("%" + q + "%")
+        )
+
     if tier:
         stmt = stmt.where(Prediction.tier == tier)
+
+    references = dict(
+        db.execute(
+            select(Account.id, Account.reference)
+        ).all()
+    )
+
     return [
-        {**serialize(t), "risk": serialize(p) if p else None}
-        for t, p in db.execute(
-            stmt.order_by(Transaction.occurred_at.desc()).offset(offset).limit(limit)
+        {
+            **serialize(transaction),
+            "risk": serialize(prediction) if prediction else None,
+            "account_number": references.get(
+                transaction.account_id,
+                str(transaction.account_id),
+            ),
+        }
+        for transaction, prediction in db.execute(
+            stmt.order_by(Transaction.occurred_at.desc())
+            .offset(offset)
+            .limit(limit)
         )
     ]
 
